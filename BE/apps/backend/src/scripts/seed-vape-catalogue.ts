@@ -1,6 +1,7 @@
 import { ExecArgs } from "@medusajs/framework/types"
 import {
   ContainerRegistrationKeys,
+  MedusaError,
   Modules,
   ProductStatus,
 } from "@medusajs/framework/utils"
@@ -134,7 +135,8 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     name: "Default Sales Channel",
   })
   if (!defaultSalesChannel) {
-    throw new Error(
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
       "Default Sales Channel not found — run `npx medusa db:migrate` before seeding."
     )
   }
@@ -146,7 +148,8 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     fields: ["id"],
   })
   if (!shippingProfile) {
-    throw new Error(
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
       "No shipping profile found — expected the core migration to have created a default one."
     )
   }
