@@ -26,3 +26,8 @@ Thumbs.db
 
 # Medusa admin build cache
 .cache/
+
+# Planning docs and AI-agent instruction files — not part of the submission
+.claude/
+AGENTS.md
+CLAUDE.md
