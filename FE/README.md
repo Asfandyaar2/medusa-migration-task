@@ -60,6 +60,26 @@ Unknown handles 404 for real (`notFound()`), not a silently-blank page. So do th
 and `/collections` paths themselves — each has its own `page.tsx` that calls `notFound()`, so they
 don't fall through to the `[countryCode]` catch-all and render a blank homepage shell.
 
+Visiting `/` redirects straight to `/collections/e-liquids` — there's no separate "home" page, and
+no link anywhere in the UI back into the starter's untouched `[countryCode]` homepage/store/cart.
+
+## Testing the Day 1 custom route from the actual site
+
+`/collections/e-liquids` has a "Filter by nicotine strength" bar — **All / 3mg / 6mg / 12mg**.
+Clicking a strength calls this task's custom backend route
+(`GET /store/vape-products?collection_handle=e-liquids&nicotine_strength=...`) directly, instead
+of the standard `/store/products` endpoint the rest of the page uses. This is what makes the
+custom addition demonstrable from the browser, not just curl/Postman:
+
+1. Run both apps, open `http://localhost:8000/collections/e-liquids`
+2. Click **6mg** — URL becomes `?nicotine_strength=6mg`, still all 5 products (every e-liquid has
+   a 6mg variant) — but the data came from the custom route this time
+3. View-source or check Network tab (in dev) — no client-side fetch is visible, since this is a
+   Server Component; the proof is that the URL param appears and the page still renders correctly
+
+`FE/src/lib/data/vape-products.ts` is the function that calls it. Disposables have no nicotine
+strength, so that filter bar only shows on `/collections/e-liquids`.
+
 ## Why these routes aren't under `/[countryCode]/...`
 
 The starter ships with `/[countryCode]/products/[handle]` as the default product URL. Left as-is,
