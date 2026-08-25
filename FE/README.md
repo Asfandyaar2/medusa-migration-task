@@ -117,13 +117,13 @@ curl -s http://localhost:8000/products/naked-100-hawaiian-pog-60ml \
   (the same monorepo the Day 1 backend was scaffolded from). Used anyway per the task's own
   suggestion ("Medusa Next.js starter") — it's still fully functional, just no longer the
   actively-promoted option. Worth knowing if this gets revisited later.
-- **No product images seeded on Day 1.** The vape catalogue has no `thumbnail`/`images`, so
-  the JSON-LD has no `image` field and product cards render without a photo. `image` is
-  *recommended*, not required, for Google's Product rich results — noting it here rather than
-  scope-creeping Day 1's seed script to add placeholder images. Collection *descriptions* got the
-  equivalent real-content treatment (see the backend README's assumptions) since that was a cheap,
-  contained fix; images were a bigger, more speculative one (no real product photography exists
-  for this catalogue) so left as a documented gap instead.
+- **Product images are generated placeholders, not real photography.** No product photos exist
+  for this catalogue, and guessing at real ones wasn't an option, so each product gets a distinct
+  generated SVG (`FE/public/products/<handle>.svg`) — used for `product.thumbnail`, the listing
+  page's image, and the product page's JSON-LD `image` / `og:image`. Regenerate them with
+  `node scripts/generate-placeholder-images.js` if the catalogue changes; re-run the backend's
+  `npm run seed:vape` afterward to pick up new thumbnail URLs (its idempotency logic replaces
+  existing vape products/collections rather than skipping them, so this is safe to re-run).
 - **`next lint` crashes on this project as downloaded, before any change of mine.** Verified by
   temporarily removing this task's added pages and re-running — `next lint` still crashes inside
   `@next/eslint-plugin-next`'s own rules (`no-html-link-for-pages`, `no-page-custom-font`) on

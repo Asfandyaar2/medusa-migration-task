@@ -135,6 +135,18 @@ const E_LIQUIDS_COLLECTION = {
   },
 }
 
+// No real product photography exists for this catalogue — these are
+// generated placeholder SVGs (see FE/public/products/), served by the
+// storefront itself. Absolute URL because the thumbnail is stored here on
+// the backend but rendered by a separate app (the storefront) — a bare
+// relative path would be ambiguous about which origin it's relative to.
+const STOREFRONT_BASE_URL =
+  process.env.STOREFRONT_BASE_URL ?? "http://localhost:8000"
+
+function thumbnailFor(handle: string): string {
+  return `${STOREFRONT_BASE_URL}/products/${handle}.svg`
+}
+
 function slugUpper(handle: string): string {
   return handle.toUpperCase()
 }
@@ -278,6 +290,7 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     title: p.title,
     handle: p.handle,
     description: p.description,
+    thumbnail: thumbnailFor(p.handle),
     status: ProductStatus.PUBLISHED,
     collection_id: disposablesCollectionId,
     shipping_profile_id: shippingProfile.id,
@@ -300,6 +313,7 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     title: p.title,
     handle: p.handle,
     description: p.description,
+    thumbnail: thumbnailFor(p.handle),
     status: ProductStatus.PUBLISHED,
     collection_id: eLiquidsCollectionId,
     shipping_profile_id: shippingProfile.id,

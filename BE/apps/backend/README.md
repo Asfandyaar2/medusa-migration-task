@@ -143,6 +143,12 @@ products to be **listable**, not purchasable, and skipping inventory levels keep
 focused. Every product is `PUBLISHED` and linked to the Default Sales Channel; unpublished or
 unlinked products don't appear in the Store API at all.
 
+Each product also gets a `thumbnail` — a generated placeholder SVG (no real product photography
+exists for this catalogue), served by the storefront at `/products/<handle>.svg` and stored here as
+the absolute URL `http://localhost:8000/products/<handle>.svg` (`STOREFRONT_BASE_URL` env var if
+that's not where the storefront runs). Absolute rather than relative because the thumbnail is
+written here, on the backend, but rendered by a separate app.
+
 ## Store API — verified calls
 
 ```bash
