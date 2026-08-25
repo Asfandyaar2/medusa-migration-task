@@ -6,6 +6,7 @@ import { HttpTypes } from "@medusajs/types"
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import { getProductPrice } from "@lib/util/get-product-price"
+import SiteHeader from "@modules/vape-store/components/site-header"
 
 const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000"
@@ -145,7 +146,9 @@ export default async function ProductPage({ params }: Props) {
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-6 py-12">
+    <>
+      <SiteHeader />
+      <main className="max-w-4xl mx-auto px-6 py-12">
       <Link href={`/collections/${product.collection?.handle ?? ""}`} className="text-sm text-ui-fg-interactive underline">
         &larr; Back to {product.collection?.title ?? "collection"}
       </Link>
@@ -201,6 +204,7 @@ export default async function ProductPage({ params }: Props) {
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
-    </main>
+      </main>
+    </>
   )
 }

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { getCollectionByHandle } from "@lib/data/collections"
 import { listProducts } from "@lib/data/products"
 import { getProductPrice } from "@lib/util/get-product-price"
+import SiteHeader from "@modules/vape-store/components/site-header"
 
 const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000"
@@ -53,7 +54,9 @@ export default async function CollectionPage({ params }: Props) {
   })
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-12">
+    <>
+      <SiteHeader />
+      <main className="max-w-6xl mx-auto px-6 py-12">
       <h1 className="text-2xl font-semibold">{collection.title}</h1>
       <p className="mt-1 text-ui-fg-subtle">{response.count} products</p>
 
@@ -86,6 +89,7 @@ export default async function CollectionPage({ params }: Props) {
           )
         })}
       </ul>
-    </main>
+      </main>
+    </>
   )
 }
