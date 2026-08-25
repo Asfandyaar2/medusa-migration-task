@@ -9,6 +9,7 @@ import {
   createCollectionsWorkflow,
   createProductsWorkflow,
   createRegionsWorkflow,
+  deleteCollectionsWorkflow,
   deleteProductsWorkflow,
 } from "@medusajs/medusa/core-flows"
 
@@ -112,14 +113,26 @@ const E_LIQUIDS: ELiquidSeed[] = [
   },
 ]
 
+// ProductCollection has no `description` column (unlike ProductCategory) —
+// confirmed against the DML schema in @medusajs/product. Storing the
+// storefront-facing blurb in metadata instead, so the collection page can
+// use real copy rather than a generic "Shop the X collection" template.
 const DISPOSABLES_COLLECTION = {
   title: "Disposable Vapes",
   handle: "disposable-vapes",
+  metadata: {
+    description:
+      "Ready-to-use disposable vapes — no refilling, no coils to change. Pick a flavor and go.",
+  },
 }
 
 const E_LIQUIDS_COLLECTION = {
   title: "E-Liquids",
   handle: "e-liquids",
+  metadata: {
+    description:
+      "Bottled e-liquids for refillable devices, each available in 3mg, 6mg, and 12mg nicotine strength.",
+  },
 }
 
 function slugUpper(handle: string): string {
@@ -201,25 +214,22 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     logger.info(`Created "United States" region (${usRegionId}).`)
   }
 
-  // --- 3. Idempotency guard for the vape catalogue itself ---
+  // --- 3. Clean slate for the vape catalogue itself ---
+  // Products reference collections by ID, so if either is going to be
+  // recreated (e.g. to pick up a description change), both must be — a
+  // guard that reused an existing collection while creating a *different*
+  // instance of the other, or vice versa, would leave products pointing at
+  // stale/mismatched IDs. Recreating both together, every time either is
+  // missing, keeps this simple and avoids that class of bug.
   const allHandles = [
     ...DISPOSABLE_VAPES.map((p) => p.handle),
     ...E_LIQUIDS.map((p) => p.handle),
   ]
   const { data: existingVapeProducts } = await query.graph({
     entity: "product",
-    fields: ["handle"],
+    fields: ["id", "handle"],
     filters: { handle: allHandles },
   })
-  if (existingVapeProducts.length) {
-    logger.warn(
-      `${existingVapeProducts.length} vape product(s) already seeded — skipping catalogue creation. ` +
-        "Delete them first (by handle) to re-seed from scratch."
-    )
-    return
-  }
-
-  // --- 4. Collections ---
   const { data: existingCollections } = await query.graph({
     entity: "product_collection",
     fields: ["id", "handle"],
@@ -228,35 +238,40 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     },
   })
 
-  let disposablesCollectionId: string
-  let eLiquidsCollectionId: string
-
-  if (existingCollections.length === 2) {
-    disposablesCollectionId = existingCollections.find(
-      (c) => c.handle === DISPOSABLES_COLLECTION.handle
-    )!.id
-    eLiquidsCollectionId = existingCollections.find(
-      (c) => c.handle === E_LIQUIDS_COLLECTION.handle
-    )!.id
-    logger.info("Both vape collections already exist — reusing them.")
-  } else {
-    const { result: collections } = await createCollectionsWorkflow(
-      container
-    ).run({
-      input: {
-        collections: [DISPOSABLES_COLLECTION, E_LIQUIDS_COLLECTION],
-      },
-    })
-    disposablesCollectionId = collections.find(
-      (c) => c.handle === DISPOSABLES_COLLECTION.handle
-    )!.id
-    eLiquidsCollectionId = collections.find(
-      (c) => c.handle === E_LIQUIDS_COLLECTION.handle
-    )!.id
+  if (existingVapeProducts.length || existingCollections.length) {
+    if (existingVapeProducts.length) {
+      await deleteProductsWorkflow(container).run({
+        input: { ids: existingVapeProducts.map((p) => p.id) },
+      })
+    }
+    if (existingCollections.length) {
+      await deleteCollectionsWorkflow(container).run({
+        input: { ids: existingCollections.map((c) => c.id) },
+      })
+    }
     logger.info(
-      `Created collections: ${DISPOSABLES_COLLECTION.handle}, ${E_LIQUIDS_COLLECTION.handle}`
+      `Cleared ${existingVapeProducts.length} existing vape product(s) and ` +
+        `${existingCollections.length} existing vape collection(s) before reseeding.`
     )
   }
+
+  // --- 4. Collections (always created fresh here — see note above) ---
+  const { result: collections } = await createCollectionsWorkflow(
+    container
+  ).run({
+    input: {
+      collections: [DISPOSABLES_COLLECTION, E_LIQUIDS_COLLECTION],
+    },
+  })
+  const disposablesCollectionId = collections.find(
+    (c) => c.handle === DISPOSABLES_COLLECTION.handle
+  )!.id
+  const eLiquidsCollectionId = collections.find(
+    (c) => c.handle === E_LIQUIDS_COLLECTION.handle
+  )!.id
+  logger.info(
+    `Created collections: ${DISPOSABLES_COLLECTION.handle}, ${E_LIQUIDS_COLLECTION.handle}`
+  )
 
   // --- 5. Products ---
   const disposableProducts = DISPOSABLE_VAPES.map((p) => ({
