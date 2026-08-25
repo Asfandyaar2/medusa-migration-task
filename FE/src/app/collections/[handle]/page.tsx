@@ -23,7 +23,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const canonicalUrl = `${BASE_URL}/collections/${collection.handle}`
-  const description = `Shop the ${collection.title} collection at ${STORE_NAME}.`
+  const metadataDescription = (collection.metadata?.description as string) || undefined
+  const description =
+    metadataDescription ?? `Shop the ${collection.title} collection at ${STORE_NAME}.`
 
   return {
     title: `${collection.title} | ${STORE_NAME}`,

@@ -38,11 +38,19 @@ async function getProductByHandle(handle: string) {
  * hold for a product that does.
  */
 function buildOffers(product: HttpTypes.StoreProduct, canonicalUrl: string) {
-  const variantPrices = (product.variants ?? [])
-    .map((v) => v.calculated_price?.calculated_amount)
-    .filter((amount): amount is number => typeof amount === "number")
+  // Derive amount and currency from the same variant, not from variants[0]
+  // for currency and "any variant with a price" for amounts — a variant
+  // with no calculated_price for the current region (e.g. unpriced, or
+  // priced in a different region) must not silently drop the whole block.
+  const pricedVariants = (product.variants ?? [])
+    .map((v) => v.calculated_price)
+    .filter(
+      (cp): cp is NonNullable<typeof cp> & { calculated_amount: number } =>
+        typeof cp?.calculated_amount === "number"
+    )
 
-  const currencyCode = product.variants?.[0]?.calculated_price?.currency_code
+  const variantPrices = pricedVariants.map((cp) => cp.calculated_amount)
+  const currencyCode = pricedVariants[0]?.currency_code
 
   if (!variantPrices.length || !currencyCode) {
     return undefined
