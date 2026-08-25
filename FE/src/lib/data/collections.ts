@@ -51,7 +51,11 @@ export const getCollectionByHandle = async (
 
   return sdk.client
     .fetch<HttpTypes.StoreCollectionListResponse>(`/store/collections`, {
-      query: { handle, fields: "*products,metadata" },
+      // Explicit `fields` REPLACES the default set rather than adding to
+      // it — title/handle must be listed explicitly or they come back
+      // undefined. (Found this the hard way: adding ",metadata" here
+      // without re-listing title/handle silently dropped both.)
+      query: { handle, fields: "id,title,handle,metadata,*products" },
       next,
       cache: "force-cache",
     })
