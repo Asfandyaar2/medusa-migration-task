@@ -56,7 +56,9 @@ Two things to check before it'll actually load data:
 | Collection listing | `/collections/e-liquids`, `/collections/disposable-vapes` |
 | Product detail | `/products/naked-100-hawaiian-pog-60ml` |
 
-Unknown handles 404 for real (`notFound()`), not a silently-blank page.
+Unknown handles 404 for real (`notFound()`), not a silently-blank page. So do the bare `/products`
+and `/collections` paths themselves — each has its own `page.tsx` that calls `notFound()`, so they
+don't fall through to the `[countryCode]` catch-all and render a blank homepage shell.
 
 ## Why these routes aren't under `/[countryCode]/...`
 
@@ -118,7 +120,10 @@ curl -s http://localhost:8000/products/naked-100-hawaiian-pog-60ml \
 - **No product images seeded on Day 1.** The vape catalogue has no `thumbnail`/`images`, so
   the JSON-LD has no `image` field and product cards render without a photo. `image` is
   *recommended*, not required, for Google's Product rich results — noting it here rather than
-  scope-creeping Day 1's seed script to add placeholder images.
+  scope-creeping Day 1's seed script to add placeholder images. Collection *descriptions* got the
+  equivalent real-content treatment (see the backend README's assumptions) since that was a cheap,
+  contained fix; images were a bigger, more speculative one (no real product photography exists
+  for this catalogue) so left as a documented gap instead.
 - **`next lint` crashes on this project as downloaded, before any change of mine.** Verified by
   temporarily removing this task's added pages and re-running — `next lint` still crashes inside
   `@next/eslint-plugin-next`'s own rules (`no-html-link-for-pages`, `no-page-custom-font`) on

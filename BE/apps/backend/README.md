@@ -79,8 +79,10 @@ BE/
    ```
    This removes the scaffold's 4 demo products, adds a "United States" region (the scaffold only
    creates a "Europe"/EUR one — see [Assumptions & notes](#assumptions--notes)), and creates the 10
-   vape products across 2 collections. Safe to re-run — it detects existing data and skips rather
-   than duplicating.
+   vape products across 2 collections. Safe to re-run — it clears any existing vape products and
+   collections first, then rebuilds both fresh, so it always converges to the same 10 products / 2
+   collections regardless of how many times you run it (product/collection IDs will change on
+   each re-run; nothing else in this task references them by ID).
 
 7. **Start the server:**
    ```bash
@@ -184,6 +186,13 @@ pagination all push down to the database through Medusa's Query graph (`query.gr
 rather than being fetched in full and filtered in the handler. Query params are validated by
 `validateAndTransformQuery` + a `createFindParams`-based zod schema, so the handler receives typed,
 already-coerced input instead of parsing `req.query` by hand.
+
+Results are also scoped to the sales channel(s) linked to the caller's publishable key
+(`req.publishable_key_context.sales_channel_ids`, merged into the query as
+`sales_channels: { id: [...] }`) — the same isolation core `/store/products` applies via its own
+`filterByValidSalesChannels()` middleware, which this route otherwise has no equivalent of. With
+one sales channel seeded here it can't change today's output, but a second storefront/channel
+without this would otherwise see products that aren't its own.
 
 ## Assumptions & notes
 
