@@ -104,6 +104,16 @@ async function getCountryCode(
  * Middleware to handle region selection and onboarding status.
  */
 export async function middleware(request: NextRequest) {
+  // Send the bare root straight at this task's flat catalogue instead of
+  // the starter's untouched full homepage (hero, nav, /us/... links) — so
+  // there's no path through the UI that lands on a non-flat product URL.
+  if (request.nextUrl.pathname === "/") {
+    return NextResponse.redirect(
+      new URL("/collections/e-liquids", request.nextUrl.origin),
+      307
+    )
+  }
+
   let redirectUrl = request.nextUrl.href
 
   let response = NextResponse.redirect(redirectUrl, 307)
