@@ -163,7 +163,13 @@ export const config = {
   // non-region-prefixed URLs (/products/[handle], /collections/[handle]) to match
   // the Shopify-style slug pattern the migration work cares about. See
   // MIGRATION-APPROACH.md and FE/README.md for why.
+  //
+  // "products(?:/|$)" (not a bare "products") so this only excludes the
+  // literal /products path and its children — a plain substring match here
+  // would also exclude unrelated paths like /productsxyz, letting them fall
+  // through to the [countryCode] catch-all and render a blank 200 instead
+  // of correctly redirecting toward a 404.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|images|assets|png|svg|jpg|jpeg|gif|webp|products|collections).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|images|assets|png|svg|jpg|jpeg|gif|webp|products(?:/|$)|collections(?:/|$)).*)",
   ],
 }
