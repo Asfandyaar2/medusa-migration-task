@@ -1,62 +1,232 @@
-<p align="center">
-  <a href="https://www.medusajs.com">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/59018053/229103275-b5e482bb-4601-46e6-8142-244f531cebdb.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    <img alt="Medusa logo" src="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    </picture>
-  </a>
-</p>
-<h1 align="center">
-  Medusa
-</h1>
+# Altera Onboarding — Medusa v2 Backend (Day 1)
 
-<h4 align="center">
-  <a href="https://docs.medusajs.com">Documentation</a> |
-  <a href="https://www.medusajs.com">Website</a>
-</h4>
+A local Medusa v2 commerce backend seeded with a 10-product vape catalogue across 2 collections,
+plus one custom Store API route. Built as the Day 1 deliverable for the Altera / 369 AI Ventures
+onboarding task.
 
-<p align="center">
-  Building blocks for digital commerce
-</p>
-<p align="center">
-  <a href="https://github.com/medusajs/medusa/blob/master/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat" alt="PRs welcome!" />
-  </a>
-    <a href="https://www.producthunt.com/posts/medusa"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%20Day-%23DA552E" alt="Product Hunt"></a>
-  <a href="https://discord.gg/xpCwq3Kfn8">
-    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
-  </a>
-  <a href="https://twitter.com/intent/follow?screen_name=medusajs">
-    <img src="https://img.shields.io/twitter/follow/medusajs.svg?label=Follow%20@medusajs" alt="Follow @medusajs" />
-  </a>
-</p>
+## Stack
 
-## Compatibility
+- **Medusa** v2.19.0 (via `create-medusa-app`, which clones the
+  [`dtc-starter`](https://github.com/medusajs/dtc-starter) monorepo — see [Project layout](#project-layout))
+- **Node** v22.15.0 (`^20.19.0 || >=22.12.0` required)
+- **PostgreSQL** 18, local
 
-This starter is compatible with versions >= 2 of `@medusajs/medusa`. 
+## Prerequisites
 
-## Getting Started
+- Node 20.19+ or 22.12+
+- PostgreSQL running locally (the Medusa docs don't state a minimum version; 15+ is the
+  practical target)
+- Git
 
-Visit the [Quickstart Guide](https://docs.medusajs.com/learn/installation) to set up a server.
+## Project layout
 
-Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to learn more about our system requirements.
+`create-medusa-app` no longer scaffolds a flat project — it clones a monorepo. The actual backend
+lives one level deeper than you might expect:
 
-## What is Medusa
+```
+BE/
+├── apps/
+│   └── backend/          <-- you are here — everything below is relative to this folder
+│       ├── src/
+│       │   ├── api/                        custom Store API route (this task's extension)
+│       │   ├── migration-scripts/          initial-data-seed.ts (ships with the scaffold)
+│       │   └── scripts/seed-vape-catalogue.ts   <-- the vape catalogue seed (this task's data)
+│       ├── medusa-config.ts
+│       ├── .env                            gitignored — create from .env.template
+│       └── package.json
+├── package.json           (turborepo root — not used directly in this task)
+└── turbo.json
+```
 
-Medusa is a set of commerce modules and tools that allow you to build rich, reliable, and performant commerce applications without reinventing core commerce logic. The modules can be customized and used to build advanced ecommerce stores, marketplaces, or any product that needs foundational commerce primitives. All modules are open-source and freely available on npm.
+**All commands below run from `apps/backend/`.**
 
-Learn more about [Medusa’s architecture](https://docs.medusajs.com/learn/introduction/architecture) and [commerce modules](https://docs.medusajs.com/learn/fundamentals/modules/commerce-modules) in the Docs.
+## Setup
 
-## Community & Contributions
+1. **Install dependencies** (from the monorepo root, `BE/`, so npm workspaces resolve correctly):
+   ```bash
+   cd BE
+   npm install
+   ```
 
-The community and core team are available in [GitHub Discussions](https://github.com/medusajs/medusa/discussions), where you can ask for support, discuss roadmap, and share ideas.
+2. **Create the database:**
+   ```bash
+   psql -U postgres -c "CREATE DATABASE altera_medusa_be;"
+   ```
 
-Join our [Discord server](https://discord.com/invite/medusajs) to meet other community members.
+3. **Configure environment:**
+   ```bash
+   cd apps/backend
+   cp .env.template .env
+   ```
+   Then fill in `DATABASE_URL` with your local Postgres credentials and generate a real
+   `AUTH_MFA_ENCRYPTION_KEY` (a command for that is in the template). Every variable is documented
+   inline in `.env.template` — see that file for the full list and what each one does.
 
-## Other channels
+4. **Run migrations** (this also runs the scaffold's own seed — see
+   [What the scaffold seeds automatically](#what-the-scaffold-seeds-automatically) below):
+   ```bash
+   npx medusa db:migrate
+   ```
 
-- [GitHub Issues](https://github.com/medusajs/medusa/issues)
-- [Twitter](https://twitter.com/medusajs)
-- [LinkedIn](https://www.linkedin.com/company/medusajs)
-- [Medusa Blog](https://medusajs.com/blog/)
+5. **Create an admin user:**
+   ```bash
+   npx medusa user -e admin@altera.local -p supersecret123
+   ```
+
+6. **Seed the vape catalogue:**
+   ```bash
+   npm run seed:vape
+   ```
+   This removes the scaffold's 4 demo products, adds a "United States" region (the scaffold only
+   creates a "Europe"/EUR one — see [Assumptions & notes](#assumptions--notes)), and creates the 10
+   vape products across 2 collections. Safe to re-run — it clears any existing vape products and
+   collections first, then rebuilds both fresh, so it always converges to the same 10 products / 2
+   collections regardless of how many times you run it (product/collection IDs will change on
+   each re-run; nothing else in this task references them by ID).
+
+7. **Start the server:**
+   ```bash
+   npm run dev
+   ```
+
+## URLs
+
+| | |
+|---|---|
+| Backend API | http://localhost:9000 |
+| Admin dashboard | http://localhost:9000/app |
+
+Log in with the admin user created in step 5.
+
+## The publishable API key
+
+Medusa v2 requires a publishable API key on **every** `/store/*` request — including this
+project's custom route. Without it you get a `400`, not a `401`, which reads like a malformed
+request rather than a missing credential.
+
+The scaffold's own seed already creates and links one — you don't need to create anything:
+
+1. Admin → **Settings → Publishable API Keys**
+2. Copy the value for **"Default Publishable API Key"**
+
+Every request needs:
+```
+-H "x-publishable-api-key: pk_..."
+```
+
+## What the scaffold seeds automatically
+
+Running `db:migrate` (step 4) auto-runs the starter's own seed script, which creates — **before**
+`seed:vape` touches anything:
+
+- A **"Default Sales Channel"**
+- A **"Default Publishable API Key"**, already linked to it
+- A **"Default Store"** with `usd` enabled alongside the default `eur`
+- A **"Europe"** region (`eur`)
+- A **"Default Shipping Profile"**
+- 4 demo products (T-Shirt, Sweatshirt, Sweatpants, Shorts) — **removed by `seed:vape`**
+
+## Data model
+
+10 products across 2 collections:
+
+| Collection | Products | Variants |
+|---|---|---|
+| `disposable-vapes` | 5 disposable vapes | 1 each (`Title: Default Title`) |
+| `e-liquids` | 5 e-liquids | 3 each, by `Nicotine Strength` (3mg / 6mg / 12mg) |
+
+The e-liquids' nicotine-strength variants are what the custom route below filters on — a real
+domain distinction (disposables don't have a strength choice), not one invented for the exercise.
+
+All prices are USD, set on the variant. `manage_inventory: false` throughout — Day 1 only needs
+products to be **listable**, not purchasable, and skipping inventory levels keeps the seed script
+focused. Every product is `PUBLISHED` and linked to the Default Sales Channel; unpublished or
+unlinked products don't appear in the Store API at all.
+
+Each product also gets a `thumbnail` — a generated placeholder SVG (no real product photography
+exists for this catalogue), served by the storefront at `/products/<handle>.svg` and stored here as
+the absolute URL `http://localhost:8000/products/<handle>.svg` (`STOREFRONT_BASE_URL` env var if
+that's not where the storefront runs). Absolute rather than relative because the thumbnail is
+written here, on the backend, but rendered by a separate app.
+
+## Store API — verified calls
+
+```bash
+PK="pk_..."   # from Settings → Publishable API Keys
+
+# List
+curl -H "x-publishable-api-key: $PK" "http://localhost:9000/store/products?limit=20"
+
+# Retrieve by handle — there is no GET /store/products/:handle; filter instead
+curl -H "x-publishable-api-key: $PK" \
+  "http://localhost:9000/store/products?handle=naked-100-hawaiian-pog-60ml"
+
+# Calculated price — needs a region matching the variant's price currency.
+# The scaffold's default region is Europe/EUR; this catalogue is priced in USD,
+# so use the "United States" region seed:vape creates (grab its id from /store/regions).
+curl -H "x-publishable-api-key: $PK" \
+  "http://localhost:9000/store/regions"
+curl -H "x-publishable-api-key: $PK" \
+  "http://localhost:9000/store/products?region_id=reg_...&fields=*variants.calculated_price"
+```
+
+## Custom addition — `GET /store/vape-products`
+
+**Files:** `src/api/store/vape-products/{route.ts,validators.ts}`, `src/api/middlewares.ts`
+
+A Store API route that lists products filtered by collection and/or nicotine strength:
+
+```bash
+curl -H "x-publishable-api-key: $PK" \
+  "http://localhost:9000/store/vape-products?collection_handle=e-liquids&nicotine_strength=6mg&limit=10&offset=0"
+```
+
+```json
+{ "vape_products": [ ... ], "count": 5, "limit": 10, "offset": 0 }
+```
+
+**Why this addition:** it's the piece a storefront actually consumes directly, and it's a genuine
+extension point rather than a toy — collection and nicotine-strength filtering are both real
+questions a vape storefront's listing page needs answered. Filtering, field selection, and
+pagination all push down to the database through Medusa's Query graph (`query.graph(...)`)
+rather than being fetched in full and filtered in the handler. Query params are validated by
+`validateAndTransformQuery` + a `createFindParams`-based zod schema, so the handler receives typed,
+already-coerced input instead of parsing `req.query` by hand.
+
+Results are also scoped to the sales channel(s) linked to the caller's publishable key
+(`req.publishable_key_context.sales_channel_ids`, merged into the query as
+`sales_channels: { id: [...] }`) — the same isolation core `/store/products` applies via its own
+`filterByValidSalesChannels()` middleware, which this route otherwise has no equivalent of. With
+one sales channel seeded here it can't change today's output, but a second storefront/channel
+without this would otherwise see products that aren't its own.
+
+## Assumptions & notes
+
+- **`create-medusa-app@2.19.0` scaffolds a monorepo, not a flat project** — it clones
+  [`dtc-starter`](https://github.com/medusajs/dtc-starter), landing the actual backend at
+  `apps/backend/`. Every path in this README accounts for that; a v1-era Medusa tutorial would
+  suggest paths one level shallower.
+- **The scaffold only seeds a "Europe"/EUR region.** Since this catalogue is priced in USD,
+  `seed:vape` explicitly creates a "United States" region so `region_id`-based price lookups have
+  something to resolve against.
+- **The scaffold's 4 demo products (T-Shirt, Sweatshirt, etc.) are deleted by `seed:vape`**, so the
+  catalogue is exactly the 10 vape products this task asks for, not 14 mixed ones. They're
+  soft-deleted (`deleted_at` set), not hard-deleted.
+- **Every product needs at least one option, even single-variant ones** — Medusa's
+  `createProductsWorkflow` validation rejects a product with variants but no `options`. The
+  disposables use a `Title: "Default Title"` placeholder option, mirroring how Shopify handles
+  variant-less products.
+- **Zod is imported from `@medusajs/framework/zod`, not the bare `zod` package** — this changed in
+  Medusa 2.13.0. The bare package is still a transitive dependency of the starter, but importing
+  from it directly is the outdated pattern.
+- **`REDIS_URL` in `.env` currently has no effect** — `medusa-config.ts` never reads it into
+  `projectConfig`, confirmed by the dev server logging "redisUrl not found. A fake redis instance
+  will be used" regardless of the env var. Left unset in practice; documented in `.env.template`.
+- **Local PostgreSQL 18 worked with no issues.** The Medusa docs don't state a version requirement
+  at all (checked directly) — the only version signal anywhere is the Docker guide's
+  `postgres:15-alpine`, which is why 15+ is called out above as a practical target rather than a
+  documented one.
+- **Stuck-on note:** `create-medusa-app` refuses to scaffold into an existing directory — even an
+  empty one — and on this machine the target folder couldn't be deleted and recreated because the
+  IDE held it open as the workspace root. Worked around by scaffolding into a throwaway directory
+  name and moving its contents into the real one afterward.

@@ -9,6 +9,7 @@ import {
   createCollectionsWorkflow,
   createProductsWorkflow,
   createRegionsWorkflow,
+  deleteCollectionsWorkflow,
   deleteProductsWorkflow,
 } from "@medusajs/medusa/core-flows"
 
@@ -19,6 +20,11 @@ type DisposableSeed = {
   handle: string
   description: string
   priceUsd: number
+  // Filename under FE/public/products/ to use as this product's thumbnail —
+  // defaults to "<handle>.svg" (the generated placeholder) when omitted.
+  // Set on products that have a real (licensed) photo available; see
+  // FE/public/products/*.jpg and the licensing note there.
+  image?: string
 }
 
 type ELiquidSeed = {
@@ -27,6 +33,7 @@ type ELiquidSeed = {
   description: string
   priceUsd: number
   strengths: NicotineStrength[]
+  image?: string
 }
 
 const DEMO_PRODUCT_HANDLES = ["t-shirt", "sweatshirt", "sweatpants", "shorts"]
@@ -38,6 +45,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A 5000-puff disposable vape delivering a cold blue raspberry finish with a smooth mesh-coil draw from first hit to last.",
     priceUsd: 17.99,
+    image: "device-bottle-blue.jpg",
   },
   {
     title: "Lost Mary OS5000 — Watermelon Cherry",
@@ -45,6 +53,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A dual-fruit watermelon and cherry blend in a compact 5000-puff disposable with consistent flavor through the full charge.",
     priceUsd: 18.99,
+    image: "device-relx.jpg",
   },
   {
     title: "Geek Bar Pulse — Miami Mint",
@@ -52,6 +61,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A crisp menthol-forward mint disposable with a dual-mesh coil for a cooler, more even draw than a standard single-coil bar.",
     priceUsd: 21.99,
+    image: "device-oxva.jpg",
   },
   {
     title: "RAZ TN9000 — Peach Mango Watermelon",
@@ -59,6 +69,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A three-fruit peach, mango, and watermelon blend in a long-lasting 9000-puff disposable built for all-day rotation.",
     priceUsd: 19.99,
+    image: "device-green.jpg",
   },
   {
     title: "Funky Republic Ti7000 — Blue Razz Ice",
@@ -66,6 +77,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A menthol-cooled blue raspberry disposable with a 7000-puff rating and a display screen for remaining battery and e-liquid.",
     priceUsd: 16.99,
+    image: "device-geekvape.jpg",
   },
 ]
 
@@ -77,6 +89,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A passionfruit, orange, and guava blend from Naked 100's original line, bottled at 60ml across three nicotine strengths.",
     priceUsd: 24.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-vaporesso.jpg",
   },
   {
     title: "Vapetasia Killer Kustard — 100ml",
@@ -85,6 +98,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A custard e-liquid built around a rich vanilla base, one of Vapetasia's longest-running flavors, in a 100ml bottle.",
     priceUsd: 27.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-geekvape.jpg",
   },
   {
     title: "Coastal Clouds Mango Berries — 60ml",
@@ -93,6 +107,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A mango and mixed-berry e-liquid from Coastal Clouds' fruit line, bottled at 60ml across three nicotine strengths.",
     priceUsd: 22.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-oxva.jpg",
   },
   {
     title: "Air Factory Blue Razz — 100ml",
@@ -101,6 +116,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A straightforward blue raspberry e-liquid from Air Factory's core range, bottled at 100ml across three nicotine strengths.",
     priceUsd: 25.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-bottle-blue.jpg",
   },
   {
     title: "Jam Monster Blueberry — 100ml",
@@ -109,17 +125,44 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A blueberry jam on buttered toast e-liquid from Jam Monster's dessert line, bottled at 100ml across three nicotine strengths.",
     priceUsd: 26.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-green.jpg",
   },
 ]
 
+// ProductCollection has no `description` column (unlike ProductCategory) —
+// confirmed against the DML schema in @medusajs/product. Storing the
+// storefront-facing blurb in metadata instead, so the collection page can
+// use real copy rather than a generic "Shop the X collection" template.
 const DISPOSABLES_COLLECTION = {
   title: "Disposable Vapes",
   handle: "disposable-vapes",
+  metadata: {
+    description:
+      "Ready-to-use disposable vapes — no refilling, no coils to change. Pick a flavor and go.",
+  },
 }
 
 const E_LIQUIDS_COLLECTION = {
   title: "E-Liquids",
   handle: "e-liquids",
+  metadata: {
+    description:
+      "Bottled e-liquids for refillable devices, each available in 3mg, 6mg, and 12mg nicotine strength.",
+  },
+}
+
+// Most of this catalogue has no real product photography — those get a
+// generated placeholder SVG (see FE/public/products/). A few disposables
+// have a real, licensed photo instead (see each DisposableSeed's `image`
+// field) — same directory, just a .jpg. Absolute URL because the thumbnail
+// is stored here on the backend but rendered by a separate app (the
+// storefront) — a bare relative path would be ambiguous about which origin
+// it's relative to.
+const STOREFRONT_BASE_URL =
+  process.env.STOREFRONT_BASE_URL ?? "http://localhost:8000"
+
+function thumbnailFor(handle: string, image?: string): string {
+  return `${STOREFRONT_BASE_URL}/products/${image ?? `${handle}.svg`}`
 }
 
 function slugUpper(handle: string): string {
@@ -201,25 +244,22 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     logger.info(`Created "United States" region (${usRegionId}).`)
   }
 
-  // --- 3. Idempotency guard for the vape catalogue itself ---
+  // --- 3. Clean slate for the vape catalogue itself ---
+  // Products reference collections by ID, so if either is going to be
+  // recreated (e.g. to pick up a description change), both must be — a
+  // guard that reused an existing collection while creating a *different*
+  // instance of the other, or vice versa, would leave products pointing at
+  // stale/mismatched IDs. Recreating both together, every time either is
+  // missing, keeps this simple and avoids that class of bug.
   const allHandles = [
     ...DISPOSABLE_VAPES.map((p) => p.handle),
     ...E_LIQUIDS.map((p) => p.handle),
   ]
   const { data: existingVapeProducts } = await query.graph({
     entity: "product",
-    fields: ["handle"],
+    fields: ["id", "handle"],
     filters: { handle: allHandles },
   })
-  if (existingVapeProducts.length) {
-    logger.warn(
-      `${existingVapeProducts.length} vape product(s) already seeded — skipping catalogue creation. ` +
-        "Delete them first (by handle) to re-seed from scratch."
-    )
-    return
-  }
-
-  // --- 4. Collections ---
   const { data: existingCollections } = await query.graph({
     entity: "product_collection",
     fields: ["id", "handle"],
@@ -228,41 +268,47 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     },
   })
 
-  let disposablesCollectionId: string
-  let eLiquidsCollectionId: string
-
-  if (existingCollections.length === 2) {
-    disposablesCollectionId = existingCollections.find(
-      (c) => c.handle === DISPOSABLES_COLLECTION.handle
-    )!.id
-    eLiquidsCollectionId = existingCollections.find(
-      (c) => c.handle === E_LIQUIDS_COLLECTION.handle
-    )!.id
-    logger.info("Both vape collections already exist — reusing them.")
-  } else {
-    const { result: collections } = await createCollectionsWorkflow(
-      container
-    ).run({
-      input: {
-        collections: [DISPOSABLES_COLLECTION, E_LIQUIDS_COLLECTION],
-      },
-    })
-    disposablesCollectionId = collections.find(
-      (c) => c.handle === DISPOSABLES_COLLECTION.handle
-    )!.id
-    eLiquidsCollectionId = collections.find(
-      (c) => c.handle === E_LIQUIDS_COLLECTION.handle
-    )!.id
+  if (existingVapeProducts.length || existingCollections.length) {
+    if (existingVapeProducts.length) {
+      await deleteProductsWorkflow(container).run({
+        input: { ids: existingVapeProducts.map((p) => p.id) },
+      })
+    }
+    if (existingCollections.length) {
+      await deleteCollectionsWorkflow(container).run({
+        input: { ids: existingCollections.map((c) => c.id) },
+      })
+    }
     logger.info(
-      `Created collections: ${DISPOSABLES_COLLECTION.handle}, ${E_LIQUIDS_COLLECTION.handle}`
+      `Cleared ${existingVapeProducts.length} existing vape product(s) and ` +
+        `${existingCollections.length} existing vape collection(s) before reseeding.`
     )
   }
+
+  // --- 4. Collections (always created fresh here — see note above) ---
+  const { result: collections } = await createCollectionsWorkflow(
+    container
+  ).run({
+    input: {
+      collections: [DISPOSABLES_COLLECTION, E_LIQUIDS_COLLECTION],
+    },
+  })
+  const disposablesCollectionId = collections.find(
+    (c) => c.handle === DISPOSABLES_COLLECTION.handle
+  )!.id
+  const eLiquidsCollectionId = collections.find(
+    (c) => c.handle === E_LIQUIDS_COLLECTION.handle
+  )!.id
+  logger.info(
+    `Created collections: ${DISPOSABLES_COLLECTION.handle}, ${E_LIQUIDS_COLLECTION.handle}`
+  )
 
   // --- 5. Products ---
   const disposableProducts = DISPOSABLE_VAPES.map((p) => ({
     title: p.title,
     handle: p.handle,
     description: p.description,
+    thumbnail: thumbnailFor(p.handle, p.image),
     status: ProductStatus.PUBLISHED,
     collection_id: disposablesCollectionId,
     shipping_profile_id: shippingProfile.id,
@@ -285,6 +331,7 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     title: p.title,
     handle: p.handle,
     description: p.description,
+    thumbnail: thumbnailFor(p.handle, p.image),
     status: ProductStatus.PUBLISHED,
     collection_id: eLiquidsCollectionId,
     shipping_profile_id: shippingProfile.id,

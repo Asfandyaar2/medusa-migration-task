@@ -19,6 +19,8 @@ export default defineMiddlewares({
             "variants.id",
             "variants.title",
             "variants.sku",
+            "variants.prices.amount",
+            "variants.prices.currency_code",
           ],
           isList: true,
         }),
