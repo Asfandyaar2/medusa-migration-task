@@ -184,6 +184,14 @@ module.exports = {
           "0%": { opacity: "1", transform: "scale(1)", filter: "blur(0px)" },
           "100%": { opacity: "0", transform: "scale(1.015)", filter: "blur(4px)" },
         },
+        // Two copies of the same content sit side by side (each exactly
+        // 50% of the animated row); translating by -50% scrolls the first
+        // copy fully off the left edge just as the second reaches the same
+        // start position, so the loop point is invisible.
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         ring: "ring 2.2s cubic-bezier(0.5, 0, 0.5, 1) infinite",
@@ -205,6 +213,7 @@ module.exports = {
         enter: "enter 200ms ease-out",
         "slide-in": "slide-in 1.2s cubic-bezier(.41,.73,.51,1.02)",
         leave: "leave 150ms ease-in forwards",
+        marquee: "marquee 22s linear infinite",
       },
     },
   },

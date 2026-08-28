@@ -121,7 +121,7 @@ const SideMenu = ({
                   >
                     {/* Top: brand + search, visually grouped and separated
                         from the nav below by a hairline divider. */}
-                    <div className="flex flex-col gap-6 border-b border-white/10 pb-6">
+                    <div className="flex flex-col gap-4 border-b border-white/10 pb-4">
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-2 font-display text-lg font-bold uppercase tracking-tight text-white">
                           <Image
@@ -181,38 +181,38 @@ const SideMenu = ({
                         left. Splitting this into two real content groups
                         (instead of one short list alone) is what keeps the
                         full-length panel from reading as mostly empty. */}
-                    <div className="flex flex-1 flex-col justify-center gap-10">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="relative flex h-16 items-center justify-center">
+                    <div className="flex flex-1 flex-col justify-center gap-5">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="relative flex h-10 items-center justify-center">
                           {/* Soft blurred "vapor cloud" glow behind the mark —
                               on-brand for a vape store, and a nicer frame for a
                               photo-based logo than a hard edge would be. */}
-                          <div className="absolute h-14 w-32 rounded-full bg-brand-sky/25 blur-2xl" />
+                          <div className="absolute h-8 w-20 rounded-full bg-brand-sky/25 blur-2xl" />
                           <Image
                             src="/logo-mark.png"
                             alt=""
-                            width={72}
-                            height={45}
-                            className="relative h-9 w-auto rounded-md opacity-90"
+                            width={48}
+                            height={30}
+                            className="relative h-6 w-auto rounded-md opacity-90"
                           />
                         </div>
-                        <span className="font-display text-xs font-bold uppercase tracking-[0.25em] text-white/60">
+                        <span className="font-display text-[10px] font-bold uppercase tracking-[0.25em] text-white/60">
                           {STORE_NAME}
                         </span>
                       </div>
 
-                      <ul className="flex flex-col items-start gap-2">
+                      <ul className="flex flex-col items-start gap-1">
                         {SideMenuItems.map(({ name, href, icon: Icon }, index) => (
                           <li key={name} className="w-full">
                             <LocalizedClientLink
                               href={href}
                               onClick={close}
                               data-testid={`${name.toLowerCase()}-link`}
-                              className="group flex animate-fade-in-up items-center gap-4 rounded-xl px-3 py-2.5 text-2xl leading-tight text-white opacity-0 transition-colors hover:bg-white/[0.06] hover:text-brand-sky"
+                              className="group flex animate-fade-in-up items-center gap-3 rounded-xl px-3 py-2 text-lg leading-tight text-white opacity-0 transition-colors hover:bg-white/[0.06] hover:text-brand-sky"
                               style={{ animationDelay: `${index * 60}ms` }}
                             >
-                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-brand-sky transition-colors group-hover:bg-brand-sky/20">
-                                <Icon className="h-5 w-5" />
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-brand-sky transition-colors group-hover:bg-brand-sky/20">
+                                <Icon className="h-4 w-4" />
                               </span>
                               {name}
                             </LocalizedClientLink>
@@ -220,7 +220,7 @@ const SideMenu = ({
                         ))}
                       </ul>
 
-                      <div className="flex animate-fade-in-up flex-col gap-3 border-t border-white/10 pt-8 opacity-0" style={{ animationDelay: "240ms" }}>
+                      <div className="flex animate-fade-in-up flex-col gap-2 border-t border-white/10 pt-5 opacity-0" style={{ animationDelay: "240ms" }}>
                         <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
                           Shop by Collection
                         </span>
@@ -230,7 +230,7 @@ const SideMenu = ({
                               key={name}
                               href={href}
                               onClick={close}
-                              className="group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/[0.06] hover:text-brand-sky"
+                              className="group flex items-center justify-between rounded-xl px-3 py-2 text-sm text-white/80 transition-colors hover:bg-white/[0.06] hover:text-brand-sky"
                             >
                               {name}
                               <ArrowRightMini className="text-white/30 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-sky" />
@@ -242,7 +242,7 @@ const SideMenu = ({
 
                     {/* Bottom: locale/region utilities + copyright, pinned to
                         the foot of the panel and separated by a divider. */}
-                    <div className="flex flex-col gap-y-4 border-t border-white/10 pt-6">
+                    <div className="flex flex-col gap-y-3 border-t border-white/10 pt-4">
                       {!!locales?.length && (
                         <div
                           className="flex justify-between"
