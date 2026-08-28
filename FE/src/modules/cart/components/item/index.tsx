@@ -44,14 +44,25 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
   const maxQtyFromInventory = 10
   const maxQuantity = item.variant?.manage_inventory ? 10 : maxQtyFromInventory
 
+  // Below sm, this row can't lay out as real table cells side by side --
+  // a thumbnail, title/variant, quantity selector, and price all sharing
+  // one ~350px-wide row is what produced the cramped, overlapping mobile
+  // layout. Each cell instead becomes a full-width flex block (stacking
+  // vertically), with the title duplicated into the thumbnail's cell for
+  // mobile only, so it reads as one grouped "product" line rather than an
+  // orphaned row of its own. sm: and up is untouched -- same table layout
+  // as before.
   return (
-    <Table.Row className="w-full" data-testid="product-row">
-      <Table.Cell className="!pl-0 p-4 w-24">
+    <Table.Row
+      className="flex flex-col gap-3 border-b border-ui-border-base py-4 sm:table-row sm:gap-0 sm:border-b-0 sm:py-0"
+      data-testid="product-row"
+    >
+      <Table.Cell className="flex items-center gap-3 !pl-0 p-4 sm:table-cell sm:w-24">
         <LocalizedClientLink
           href={`/products/${item.product_handle}`}
-          className={clx("flex", {
+          className={clx("flex shrink-0", {
             "w-16": type === "preview",
-            "small:w-24 w-12": type === "full",
+            "small:w-24 w-14": type === "full",
           })}
         >
           <Thumbnail
@@ -60,9 +71,18 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
             size="square"
           />
         </LocalizedClientLink>
+        <div className="sm:hidden">
+          <Text
+            className="txt-medium-plus text-ui-fg-base"
+            data-testid="product-title"
+          >
+            {item.product_title}
+          </Text>
+          <LineItemOptions variant={item.variant} data-testid="product-variant" />
+        </div>
       </Table.Cell>
 
-      <Table.Cell className="text-left">
+      <Table.Cell className="hidden text-left sm:table-cell">
         <Text
           className="txt-medium-plus text-ui-fg-base"
           data-testid="product-title"
@@ -73,7 +93,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
       </Table.Cell>
 
       {type === "full" && (
-        <Table.Cell>
+        <Table.Cell className="flex sm:table-cell">
           <div className="flex gap-2 items-center w-28">
             <DeleteButton id={item.id} data-testid="product-delete-button" />
             <CartItemSelect
@@ -114,7 +134,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
         </Table.Cell>
       )}
 
-      <Table.Cell className="!pr-0">
+      <Table.Cell className="flex !pr-0 sm:table-cell">
         <span
           className={clx("!pr-0", {
             "flex flex-col items-end h-full justify-center": type === "preview",

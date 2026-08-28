@@ -17,7 +17,10 @@ const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
         <Heading className="text-[2rem] leading-[2.75rem]">Cart</Heading>
       </div>
       <Table>
-        <Table.Header className="border-t-0">
+        {/* Below sm, each row renders as a stacked card (see Item) rather
+            than real table cells, so a header row of column labels no
+            longer lines up with anything -- hidden there entirely. */}
+        <Table.Header className="border-t-0 hidden sm:table-header-group">
           <Table.Row className="text-ui-fg-subtle txt-medium-plus">
             <Table.HeaderCell className="!pl-0">Item</Table.HeaderCell>
             <Table.HeaderCell></Table.HeaderCell>
