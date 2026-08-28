@@ -90,18 +90,30 @@ actual project name everywhere below).
 1. [railway.app](https://railway.app) → **New Project → Deploy from GitHub repo** → this repo.
 2. Service **Settings → Source → Root Directory: `BE/apps/backend`**.
 3. Settings → Deploy:
-   - **Build Command:** `npm run build`
-   - **Start Command:** `npx medusa db:migrate && npm run start`
-   (Railway's Nixpacks builder usually infers both from `package.json`, but set them explicitly
-   so a future dependency bump can't silently change what runs.)
+   - **Build Command:** `npm run build && cd .medusa/server && npm install`
+   - **Start Command:** `cd .medusa/server && npx medusa db:migrate && npm run start`
 
-   **Why the migrate step is chained into Start, not skipped:** without it, the very first boot
-   (and any future deploy that adds a migration) queries tables that don't exist yet and the
-   process crashes on startup — this is exactly what happened the first time this was deployed
-   without it. `db:migrate` only applies *pending* migrations, so it's a fast no-op on every
-   deploy where the schema's already current — safe to leave in permanently. If your Railway plan
-   exposes a separate **Pre-Deploy Command** field, that's the more "correct" home for this same
-   command; functionally equivalent to chaining it here.
+   **Why `cd .medusa/server` at all:** `medusa build` doesn't produce a directly-runnable app in
+   place — it writes a second, self-contained copy of the server (its own `package.json`, compiled
+   `src`, and the built admin dashboard under `public/admin/index.html`) into `.medusa/server`,
+   which needs its own `npm install` to actually be runnable (it ships no `node_modules` of its
+   own). Running `medusa start` from the project root instead of from `.medusa/server` is what
+   caused this exact deployment's first successful-build-but-crashing-boot: it threw "Could not
+   find index.html in the admin build directory" because Railway's build and runtime steps don't
+   reliably share the same filesystem the way a local machine does, so `.medusa/server`'s contents
+   didn't carry over into whatever context `npm run start` (from the root) ran in — verified by
+   reproducing it fixed locally: `medusa start` from the root works fine on a single local
+   filesystem, but the officially-documented `.medusa/server` pattern is what's actually reliable
+   across a real build→deploy boundary like Railway's.
+
+   **Why `db:migrate` is chained into Start, not skipped:** without it, the very first boot (and
+   any future deploy that adds a migration) queries tables that don't exist yet and the process
+   crashes on startup — this is what happened the *second* time this was deployed, before the
+   `.medusa/server` fix above. `db:migrate` only applies *pending* migrations, so it's a fast no-op
+   on every deploy where the schema's already current — safe to leave in permanently. If your
+   Railway plan exposes a separate **Pre-Deploy Command** field, that's the more "correct" home for
+   this same command (run from `.medusa/server` there too); functionally equivalent to chaining it
+   into Start.
 
 ### 3.2 Environment variables
 
