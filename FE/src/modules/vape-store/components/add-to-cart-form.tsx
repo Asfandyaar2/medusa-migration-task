@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Loader } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import { addToCart } from "@lib/data/cart"
 import { CART_COUNTRY_CODE } from "@lib/util/cart-region"
@@ -18,7 +19,7 @@ export default function AddToCartForm({
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     variants.length === 1 ? variants[0].id : null
   )
-  const [justAdded, setJustAdded] = useState(false)
+  const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const variantOptions = useMemo(
@@ -32,14 +33,16 @@ export default function AddToCartForm({
 
   // Optimistic: the backend round trip (Vercel -> Railway -> Neon) runs a
   // couple of seconds even on a healthy connection, so waiting for it
-  // before showing success makes the button feel stuck. Flip to "Added"
-  // immediately and only walk it back if the request actually fails --
-  // the real cart (and its count badge elsewhere) still catches up via
-  // router.refresh() once the request resolves.
+  // before resolving would make the button feel stuck. The spinner here is
+  // a fixed, short tactile beat -- not tied to when the request actually
+  // finishes -- and the button goes straight back to "Add to Cart" after
+  // it, rather than lingering on a separate "Added to Cart" label. The
+  // real cart (and its count badge elsewhere) still catches up shortly
+  // after via router.refresh() once the background request resolves.
   const handleAddToCart = () => {
     if (!selectedVariantId) return
 
-    setJustAdded(true)
+    setIsPending(true)
     setError(null)
 
     addToCart({
@@ -48,12 +51,9 @@ export default function AddToCartForm({
       countryCode: CART_COUNTRY_CODE,
     })
       .then(() => router.refresh())
-      .catch(() => {
-        setJustAdded(false)
-        setError("Couldn't add to cart — please try again.")
-      })
+      .catch(() => setError("Couldn't add to cart — please try again."))
 
-    setTimeout(() => setJustAdded(false), 2000)
+    setTimeout(() => setIsPending(false), 700)
   }
 
   return (
@@ -74,14 +74,16 @@ export default function AddToCartForm({
       <button
         type="button"
         onClick={handleAddToCart}
-        disabled={!selectedVariantId || justAdded}
-        className="mt-8 rounded-full bg-brand-navy px-8 py-3 text-xs font-bold uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!selectedVariantId || isPending}
+        className="mt-8 flex items-center justify-center gap-2 rounded-full bg-brand-navy px-8 py-3 text-xs font-bold uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {justAdded
-          ? "Added to Cart"
-          : !selectedVariantId
-          ? "Select a Strength"
-          : "Add to Cart"}
+        {isPending ? (
+          <Loader className="h-4 w-4 animate-spin" />
+        ) : !selectedVariantId ? (
+          "Select a Strength"
+        ) : (
+          "Add to Cart"
+        )}
       </button>
       {error && <p className="mt-2 text-xs text-brand-crimson">{error}</p>}
     </div>
