@@ -56,3 +56,6 @@ dump.rdb
 /blob-report/
 /playwright/.cache/
 /playwright/.auth
+
+# scraped reference images, local testing only
+/public/test-images-local/

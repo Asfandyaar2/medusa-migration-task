@@ -29,21 +29,26 @@ function escapeXml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 }
 
+// Designed to sit inside ProductCard/PDP's white image tile (see
+// FE/src/modules/vape-store/components/product-card.tsx) — a white canvas
+// with a colored "capsule" silhouette, not a full-bleed dark card, so it
+// doesn't fight the surrounding white-tile-on-dark-backdrop treatment.
 function svgFor({ title, sub, color }) {
   const t = escapeXml(title)
   const s = escapeXml(sub)
   return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="capsule" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="${color}"/>
-      <stop offset="1" stop-color="#111827"/>
+      <stop offset="1" stop-color="${color}" stop-opacity="0.75"/>
     </linearGradient>
   </defs>
-  <rect width="800" height="800" fill="url(#bg)"/>
-  <rect x="60" y="60" width="680" height="680" rx="32" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
-  <text x="400" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#ffffff">${t}</text>
-  <text x="400" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#ffffff" fill-opacity="0.85">${s}</text>
-  <text x="400" y="740" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" fill-opacity="0.5">Placeholder image — no product photography available</text>
+  <rect width="800" height="800" fill="#ffffff"/>
+  <rect x="310" y="140" width="180" height="440" rx="90" fill="url(#capsule)"/>
+  <rect x="330" y="170" width="40" height="200" rx="20" fill="#ffffff" fill-opacity="0.35"/>
+  <text x="400" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="#0F1F4A">${t}</text>
+  <text x="400" y="702" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" fill="#0F1F4A" fill-opacity="0.7">${s}</text>
+  <text x="400" y="760" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#9CA3AF">Placeholder image — no product photography available</text>
 </svg>`
 }
 

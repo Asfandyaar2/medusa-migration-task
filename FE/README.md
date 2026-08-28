@@ -53,6 +53,7 @@ Two things to check before it'll actually load data:
 
 | Route | Example |
 |---|---|
+| Home | `/` |
 | Collection listing | `/collections/e-liquids`, `/collections/disposable-vapes` |
 | Product detail | `/products/naked-100-hawaiian-pog-60ml` |
 
@@ -60,8 +61,10 @@ Unknown handles 404 for real (`notFound()`), not a silently-blank page. So do th
 and `/collections` paths themselves — each has its own `page.tsx` that calls `notFound()`, so they
 don't fall through to the `[countryCode]` catch-all and render a blank homepage shell.
 
-Visiting `/` redirects straight to `/collections/e-liquids` — there's no separate "home" page, and
-no link anywhere in the UI back into the starter's untouched `[countryCode]` homepage/store/cart.
+`/` renders a real homepage (`src/app/page.tsx`) — hero, both collections, and a "why shop with us"
+section, all built from the same real Medusa data the other two pages use, no fabricated content.
+There's still no link anywhere in the UI back into the starter's untouched `[countryCode]`
+homepage/store/cart.
 
 ## Testing the Day 1 custom route from the actual site
 
@@ -110,7 +113,7 @@ nothing links to it from them.
 ## SEO on the product page
 
 `generateMetadata` sets:
-- `<title>` — `{Product} | MIA Tyson Vape Deals`
+- `<title>` — `{Product} | Cirrus Vapor Co.`
 - Meta description — the real product description (truncated to ~155 chars), not a placeholder
 - `alternates.canonical` — absolute, self-referencing, pointing at the flat URL
 

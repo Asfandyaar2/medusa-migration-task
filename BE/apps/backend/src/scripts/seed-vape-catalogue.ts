@@ -20,6 +20,11 @@ type DisposableSeed = {
   handle: string
   description: string
   priceUsd: number
+  // Filename under FE/public/products/ to use as this product's thumbnail —
+  // defaults to "<handle>.svg" (the generated placeholder) when omitted.
+  // Set on products that have a real (licensed) photo available; see
+  // FE/public/products/*.jpg and the licensing note there.
+  image?: string
 }
 
 type ELiquidSeed = {
@@ -28,6 +33,7 @@ type ELiquidSeed = {
   description: string
   priceUsd: number
   strengths: NicotineStrength[]
+  image?: string
 }
 
 const DEMO_PRODUCT_HANDLES = ["t-shirt", "sweatshirt", "sweatpants", "shorts"]
@@ -39,6 +45,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A 5000-puff disposable vape delivering a cold blue raspberry finish with a smooth mesh-coil draw from first hit to last.",
     priceUsd: 17.99,
+    image: "device-bottle-blue.jpg",
   },
   {
     title: "Lost Mary OS5000 — Watermelon Cherry",
@@ -46,6 +53,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A dual-fruit watermelon and cherry blend in a compact 5000-puff disposable with consistent flavor through the full charge.",
     priceUsd: 18.99,
+    image: "device-relx.jpg",
   },
   {
     title: "Geek Bar Pulse — Miami Mint",
@@ -53,6 +61,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A crisp menthol-forward mint disposable with a dual-mesh coil for a cooler, more even draw than a standard single-coil bar.",
     priceUsd: 21.99,
+    image: "device-oxva.jpg",
   },
   {
     title: "RAZ TN9000 — Peach Mango Watermelon",
@@ -60,6 +69,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A three-fruit peach, mango, and watermelon blend in a long-lasting 9000-puff disposable built for all-day rotation.",
     priceUsd: 19.99,
+    image: "device-green.jpg",
   },
   {
     title: "Funky Republic Ti7000 — Blue Razz Ice",
@@ -67,6 +77,7 @@ const DISPOSABLE_VAPES: DisposableSeed[] = [
     description:
       "A menthol-cooled blue raspberry disposable with a 7000-puff rating and a display screen for remaining battery and e-liquid.",
     priceUsd: 16.99,
+    image: "device-geekvape.jpg",
   },
 ]
 
@@ -78,6 +89,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A passionfruit, orange, and guava blend from Naked 100's original line, bottled at 60ml across three nicotine strengths.",
     priceUsd: 24.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-vaporesso.jpg",
   },
   {
     title: "Vapetasia Killer Kustard — 100ml",
@@ -86,6 +98,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A custard e-liquid built around a rich vanilla base, one of Vapetasia's longest-running flavors, in a 100ml bottle.",
     priceUsd: 27.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-geekvape.jpg",
   },
   {
     title: "Coastal Clouds Mango Berries — 60ml",
@@ -94,6 +107,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A mango and mixed-berry e-liquid from Coastal Clouds' fruit line, bottled at 60ml across three nicotine strengths.",
     priceUsd: 22.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-oxva.jpg",
   },
   {
     title: "Air Factory Blue Razz — 100ml",
@@ -102,6 +116,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A straightforward blue raspberry e-liquid from Air Factory's core range, bottled at 100ml across three nicotine strengths.",
     priceUsd: 25.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-bottle-blue.jpg",
   },
   {
     title: "Jam Monster Blueberry — 100ml",
@@ -110,6 +125,7 @@ const E_LIQUIDS: ELiquidSeed[] = [
       "A blueberry jam on buttered toast e-liquid from Jam Monster's dessert line, bottled at 100ml across three nicotine strengths.",
     priceUsd: 26.99,
     strengths: ["3mg", "6mg", "12mg"],
+    image: "device-green.jpg",
   },
 ]
 
@@ -135,16 +151,18 @@ const E_LIQUIDS_COLLECTION = {
   },
 }
 
-// No real product photography exists for this catalogue — these are
-// generated placeholder SVGs (see FE/public/products/), served by the
-// storefront itself. Absolute URL because the thumbnail is stored here on
-// the backend but rendered by a separate app (the storefront) — a bare
-// relative path would be ambiguous about which origin it's relative to.
+// Most of this catalogue has no real product photography — those get a
+// generated placeholder SVG (see FE/public/products/). A few disposables
+// have a real, licensed photo instead (see each DisposableSeed's `image`
+// field) — same directory, just a .jpg. Absolute URL because the thumbnail
+// is stored here on the backend but rendered by a separate app (the
+// storefront) — a bare relative path would be ambiguous about which origin
+// it's relative to.
 const STOREFRONT_BASE_URL =
   process.env.STOREFRONT_BASE_URL ?? "http://localhost:8000"
 
-function thumbnailFor(handle: string): string {
-  return `${STOREFRONT_BASE_URL}/products/${handle}.svg`
+function thumbnailFor(handle: string, image?: string): string {
+  return `${STOREFRONT_BASE_URL}/products/${image ?? `${handle}.svg`}`
 }
 
 function slugUpper(handle: string): string {
@@ -290,7 +308,7 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     title: p.title,
     handle: p.handle,
     description: p.description,
-    thumbnail: thumbnailFor(p.handle),
+    thumbnail: thumbnailFor(p.handle, p.image),
     status: ProductStatus.PUBLISHED,
     collection_id: disposablesCollectionId,
     shipping_profile_id: shippingProfile.id,
@@ -313,7 +331,7 @@ export default async function seedVapeCatalogue({ container }: ExecArgs) {
     title: p.title,
     handle: p.handle,
     description: p.description,
-    thumbnail: thumbnailFor(p.handle),
+    thumbnail: thumbnailFor(p.handle, p.image),
     status: ProductStatus.PUBLISHED,
     collection_id: eLiquidsCollectionId,
     shipping_profile_id: shippingProfile.id,

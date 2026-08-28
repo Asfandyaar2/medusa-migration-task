@@ -1,30 +1,29 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { getCollectionByHandle } from "@lib/data/collections"
 import { listProducts } from "@lib/data/products"
-import { getProductPrice } from "@lib/util/get-product-price"
 import { listVapeProducts } from "@lib/data/vape-products"
-import { firstPrice } from "@lib/util/vape-price"
+import {
+  ProductCardData,
+  toCardProductFromStore,
+  toCardProductFromVape,
+} from "@lib/util/to-card-product"
+import { STORE_NAME } from "@lib/constants/store"
 import SiteHeader from "@modules/vape-store/components/site-header"
+import SiteFooter from "@modules/vape-store/components/site-footer"
+import NicotineWarningStrip from "@modules/vape-store/components/nicotine-warning-strip"
+import SectionHeading from "@modules/vape-store/components/section-heading"
+import ProductGrid from "@modules/vape-store/components/product-grid"
+import { getCartItemCount } from "@modules/vape-store/components/cart-count-badge"
 
 const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000"
-const STORE_NAME = "MIA Tyson Vape Deals"
 const NICOTINE_STRENGTHS = ["3mg", "6mg", "12mg"]
 
 type Props = {
   params: Promise<{ handle: string }>
   searchParams: Promise<{ nicotine_strength?: string }>
-}
-
-type CardProduct = {
-  id: string
-  handle: string
-  title: string
-  thumbnail: string | null
-  priceLabel: string | null
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -58,7 +57,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
     notFound()
   }
 
-  let products: CardProduct[]
+  let products: ProductCardData[]
   let count: number
 
   if (nicotineStrength) {
@@ -69,13 +68,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       nicotineStrength,
     })
     count = vapeCount
-    products = vape_products.map((p) => ({
-      id: p.id,
-      handle: p.handle,
-      title: p.title,
-      thumbnail: p.thumbnail,
-      priceLabel: p.variants?.[0] ? firstPrice(p.variants[0]) : null,
-    }))
+    products = vape_products.map(toCardProductFromVape)
   } else {
     const { response } = await listProducts({
       countryCode: DEFAULT_REGION,
@@ -85,30 +78,36 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       },
     })
     count = response.count
-    products = response.products.map((p) => ({
-      id: p.id,
-      handle: p.handle!,
-      title: p.title!,
-      thumbnail: p.thumbnail ?? null,
-      priceLabel: getProductPrice({ product: p }).cheapestPrice?.calculated_price ?? null,
-    }))
+    products = response.products.map(toCardProductFromStore)
   }
+
+  const description = (collection.metadata?.description as string) || undefined
+  const cartItemCount = await getCartItemCount()
 
   return (
     <>
-      <SiteHeader />
-      <main className="max-w-6xl mx-auto px-6 py-12">
-        <h1 className="text-2xl font-semibold">{collection.title}</h1>
-        <p className="mt-1 text-ui-fg-subtle">{count} products</p>
+      <NicotineWarningStrip />
+      <SiteHeader cartItemCount={cartItemCount} />
+      <main className="content-container py-12">
+        <SectionHeading
+          eyebrow={`${count} Products`}
+          title={collection.title}
+          description={description}
+          tone="light"
+        />
 
         {collection.handle === "e-liquids" && (
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-ui-fg-subtle">
-              Filter by nicotine strength (custom API route):
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-grey-50">
+              Nicotine strength:
             </span>
             <Link
               href="/collections/e-liquids"
-              className={`rounded border px-3 py-1 ${!nicotineStrength ? "bg-black text-white" : ""}`}
+              className={`rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                !nicotineStrength
+                  ? "border-brand-navy bg-brand-navy text-white"
+                  : "border-brand-navy/30 text-brand-navy hover:border-brand-navy"
+              }`}
             >
               All
             </Link>
@@ -116,8 +115,10 @@ export default async function CollectionPage({ params, searchParams }: Props) {
               <Link
                 key={strength}
                 href={`/collections/e-liquids?nicotine_strength=${strength}`}
-                className={`rounded border px-3 py-1 ${
-                  nicotineStrength === strength ? "bg-black text-white" : ""
+                className={`rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                  nicotineStrength === strength
+                    ? "border-brand-navy bg-brand-navy text-white"
+                    : "border-brand-navy/30 text-brand-navy hover:border-brand-navy"
                 }`}
               >
                 {strength}
@@ -126,30 +127,14 @@ export default async function CollectionPage({ params, searchParams }: Props) {
           </div>
         )}
 
-        <ul className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
-          {products.map((product) => (
-            <li key={product.id}>
-              <Link href={`/products/${product.handle}`} className="block group">
-                {product.thumbnail && (
-                  <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-gray-50">
-                    <Image
-                      src={product.thumbnail}
-                      alt={product.title}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                      sizes="(min-width: 768px) 25vw, 50vw"
-                    />
-                  </div>
-                )}
-                <p className="mt-2 text-sm font-medium">{product.title}</p>
-                {product.priceLabel && (
-                  <p className="text-sm text-ui-fg-subtle">{product.priceLabel}</p>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-8">
+          <ProductGrid
+            products={products}
+            className="grid-cols-2 small:grid-cols-3 medium:grid-cols-4"
+          />
+        </div>
       </main>
+      <SiteFooter />
     </>
   )
 }

@@ -104,14 +104,12 @@ async function getCountryCode(
  * Middleware to handle region selection and onboarding status.
  */
 export async function middleware(request: NextRequest) {
-  // Send the bare root straight at this task's flat catalogue instead of
-  // the starter's untouched full homepage (hero, nav, /us/... links) — so
-  // there's no path through the UI that lands on a non-flat product URL.
+  // "/" redirects to the default region's full storefront experience
+  // (Nav/SideMenu/search/account, not just the flat catalogue pages) —
+  // hardcoded to "us" since this project is single-region throughout
+  // (same assumption NEXT_PUBLIC_DEFAULT_REGION makes everywhere else).
   if (request.nextUrl.pathname === "/") {
-    return NextResponse.redirect(
-      new URL("/collections/e-liquids", request.nextUrl.origin),
-      307
-    )
+    return NextResponse.redirect(new URL("/us", request.nextUrl.origin), 307)
   }
 
   let redirectUrl = request.nextUrl.href
@@ -169,10 +167,15 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // /products and /collections are excluded here — this task keeps them at flat,
-  // non-region-prefixed URLs (/products/[handle], /collections/[handle]) to match
-  // the Shopify-style slug pattern the migration work cares about. See
-  // MIGRATION-APPROACH.md and FE/README.md for why.
+  // /products, /collections, /cart, and /blog are excluded here — this task
+  // keeps them at flat, non-region-prefixed URLs (/products/[handle],
+  // /collections/[handle], /cart, /blog, /blog/[slug]) to match the
+  // Shopify-style slug pattern the migration work cares about. See
+  // MIGRATION-APPROACH.md and FE/README.md for why. /cart specifically must
+  // stay excluded too, or a request to it gets 307'd into /us/cart (the
+  // starter's own cart page) before Next's router ever sees the new flat
+  // src/app/cart/page.tsx. /blog needs the same treatment or it 404s at
+  // /us/blog instead of reaching src/app/blog/page.tsx.
   //
   // "products(?:/|$)" (not a bare "products") so this only excludes the
   // literal /products path and its children — a plain substring match here
@@ -180,6 +183,6 @@ export const config = {
   // through to the [countryCode] catch-all and render a blank 200 instead
   // of correctly redirecting toward a 404.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|images|assets|png|svg|jpg|jpeg|gif|webp|products(?:/|$)|collections(?:/|$)).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|images|assets|png|svg|jpg|jpeg|gif|webp|products(?:/|$)|collections(?:/|$)|cart(?:/|$)|blog(?:/|$)).*)",
   ],
 }

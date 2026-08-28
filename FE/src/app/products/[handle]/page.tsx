@@ -6,11 +6,15 @@ import { HttpTypes } from "@medusajs/types"
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import { getProductPrice } from "@lib/util/get-product-price"
+import { STORE_NAME } from "@lib/constants/store"
 import SiteHeader from "@modules/vape-store/components/site-header"
+import SiteFooter from "@modules/vape-store/components/site-footer"
+import NicotineWarningStrip from "@modules/vape-store/components/nicotine-warning-strip"
+import AddToCartForm from "@modules/vape-store/components/add-to-cart-form"
+import { getCartItemCount } from "@modules/vape-store/components/cart-count-badge"
 
 const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000"
-const STORE_NAME = "MIA Tyson Vape Deals"
 
 type Props = {
   params: Promise<{ handle: string }>
@@ -130,6 +134,7 @@ export default async function ProductPage({ params }: Props) {
   const { cheapestPrice } = getProductPrice({ product })
   const canonicalUrl = `${BASE_URL}/products/${product.handle}`
   const offers = buildOffers(product, canonicalUrl)
+  const isAggregateOffer = offers?.["@type"] === "AggregateOffer"
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -145,66 +150,98 @@ export default async function ProductPage({ params }: Props) {
     offers,
   }
 
+  const cartItemCount = await getCartItemCount()
+
   return (
     <>
-      <SiteHeader />
-      <main className="max-w-4xl mx-auto px-6 py-12">
-      <Link href={`/collections/${product.collection?.handle ?? ""}`} className="text-sm text-ui-fg-interactive underline">
-        &larr; Back to {product.collection?.title ?? "collection"}
-      </Link>
+      <NicotineWarningStrip />
+      <SiteHeader cartItemCount={cartItemCount} />
+      <main className="content-container py-12">
+        <Link
+          href={`/collections/${product.collection?.handle ?? ""}`}
+          className="text-sm font-semibold text-brand-navy underline decoration-brand-navy/40 underline-offset-4 hover:text-brand-sky"
+        >
+          &larr; Back to {product.collection?.title ?? "collection"}
+        </Link>
 
-      <div className="mt-6 grid gap-10 md:grid-cols-2">
-        {product.thumbnail && (
-          <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-gray-50">
-            <Image
-              src={product.thumbnail}
-              alt={product.title}
-              fill
-              className="object-cover"
-              sizes="(min-width: 768px) 50vw, 100vw"
-            />
-          </div>
-        )}
-
-        <div>
-          <h1 className="text-2xl font-semibold">{product.title}</h1>
-
-          {cheapestPrice && (
-            <p className="mt-2 text-xl">{cheapestPrice.calculated_price}</p>
-          )}
-
-          {product.description && (
-            <p className="mt-4 text-ui-fg-subtle">{product.description}</p>
-          )}
-
-          {!!product.variants?.length && product.variants.length > 1 && (
-            <div className="mt-6">
-              <h2 className="text-sm font-medium uppercase tracking-wide text-ui-fg-subtle">
-                Available options
-              </h2>
-              <ul className="mt-2 flex flex-wrap gap-2">
-                {product.variants.map((variant) => (
-                  <li
-                    key={variant.id}
-                    className="rounded border px-3 py-1 text-sm"
-                  >
-                    {variant.title}
-                  </li>
-                ))}
-              </ul>
+        <div className="mt-6 grid gap-10 small:grid-cols-2">
+          {product.thumbnail && (
+            <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 p-3 rounded-2xl">
+              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white p-10">
+                <Image
+                  src={product.thumbnail}
+                  alt={product.title}
+                  fill
+                  className="object-contain p-4"
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  priority
+                />
+              </div>
             </div>
           )}
 
-          <p className="mt-6 text-xs text-ui-fg-muted">SKU: {product.variants?.[0]?.sku}</p>
-        </div>
-      </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-brand-navy small:text-3xl">
+              {product.title}
+            </h1>
 
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
-      />
+            {cheapestPrice && (
+              <p className="mt-2 font-display text-2xl font-bold text-brand-navy">
+                {isAggregateOffer && (
+                  <span className="mr-1 align-middle text-xs font-semibold uppercase tracking-wide text-grey-50">
+                    From
+                  </span>
+                )}
+                {cheapestPrice.calculated_price}
+              </p>
+            )}
+
+            {product.description && (
+              <p className="mt-4 text-sm leading-relaxed text-grey-60">
+                {product.description}
+              </p>
+            )}
+
+            <AddToCartForm product={product} />
+
+            <p className="mt-6 text-xs text-grey-40">
+              SKU: {product.variants?.[0]?.sku}
+            </p>
+          </div>
+        </div>
+
+        {/* Ambient lifestyle photography — not this product's own thumbnail
+            (that stays the honest per-SKU placeholder above), just real
+            device photography setting the scene, same boundary the hero
+            carousel uses. */}
+        <div className="mt-16 grid gap-4 small:grid-cols-2">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
+            <Image
+              src="/lifestyle/lifestyle-1.jpg"
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(min-width: 1024px) 50vw, 100vw"
+            />
+          </div>
+          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
+            <Image
+              src="/lifestyle/lifestyle-2.jpg"
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(min-width: 1024px) 50vw, 100vw"
+            />
+          </div>
+        </div>
+
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
+        />
       </main>
+      <SiteFooter />
     </>
   )
 }

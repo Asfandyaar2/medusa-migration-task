@@ -34,6 +34,16 @@ module.exports = {
           80: "#1F2937",
           90: "#111827",
         },
+        brand: {
+          navy: "#0F1F4A",
+          "navy-dark": "#08142E",
+          sky: "#60A5FA",
+          silver: "#DDE3EA",
+          crimson: "#C8202E",
+        },
+      },
+      boxShadow: {
+        "brand-glow": "0 0 40px -10px rgba(96,165,250,0.45)",
       },
       borderRadius: {
         none: "0px",
@@ -60,6 +70,19 @@ module.exports = {
       },
       fontFamily: {
         sans: [
+          "var(--font-sans)",
+          "Inter",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Ubuntu",
+          "sans-serif",
+        ],
+        display: [
+          "var(--font-display)",
+          "var(--font-sans)",
           "Inter",
           "-apple-system",
           "BlinkMacSystemFont",
@@ -140,9 +163,36 @@ module.exports = {
           "0%": { transform: "translateY(-100%)" },
           "100%": { transform: "translateY(0)" },
         },
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "hero-progress": {
+          "0%": { width: "0%" },
+          "100%": { width: "100%" },
+        },
+        // Single crossfade pair driving a hero slide's image + overlay +
+        // text together as one element — scale never drops below 1, so the
+        // object-cover image always fully covers its box (no edge gaps),
+        // and the shared decelerating curve is what makes the blur clear
+        // and the motion settle at the same instant.
+        "hero-slide-in": {
+          "0%": { opacity: "0", transform: "scale(1.04)", filter: "blur(8px)" },
+          "100%": { opacity: "1", transform: "scale(1)", filter: "blur(0px)" },
+        },
+        "hero-slide-out": {
+          "0%": { opacity: "1", transform: "scale(1)", filter: "blur(0px)" },
+          "100%": { opacity: "0", transform: "scale(1.015)", filter: "blur(4px)" },
+        },
       },
       animation: {
         ring: "ring 2.2s cubic-bezier(0.5, 0, 0.5, 1) infinite",
+        "fade-in-up": "fade-in-up 0.6s ease-out forwards",
+        "hero-progress": "hero-progress 5s linear forwards",
+        // Both directions share the identical duration + easing curve —
+        // that shared clock is what makes the crossfade read as one motion.
+        "hero-slide-in": "hero-slide-in 450ms cubic-bezier(0.22, 1, 0.36, 1) both",
+        "hero-slide-out": "hero-slide-out 450ms cubic-bezier(0.22, 1, 0.36, 1) both",
         "fade-in-right":
           "fade-in-right 0.3s cubic-bezier(0.5, 0, 0.5, 1) forwards",
         "fade-in-top": "fade-in-top 0.2s cubic-bezier(0.5, 0, 0.5, 1) forwards",
