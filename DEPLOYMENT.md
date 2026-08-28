@@ -91,7 +91,7 @@ actual project name everywhere below).
 2. Service **Settings → Source → Root Directory: `BE/apps/backend`**.
 3. Settings → Deploy:
    - **Build Command:** `npm run build && cd .medusa/server && npm install`
-   - **Start Command:** `cd .medusa/server && npx medusa db:migrate && npm run start`
+   - **Start Command:** `cd .medusa/server && npm run start`
 
    **Why `cd .medusa/server` at all:** `medusa build` doesn't produce a directly-runnable app in
    place — it writes a second, self-contained copy of the server (its own `package.json`, compiled
@@ -106,14 +106,15 @@ actual project name everywhere below).
    filesystem, but the officially-documented `.medusa/server` pattern is what's actually reliable
    across a real build→deploy boundary like Railway's.
 
-   **Why `db:migrate` is chained into Start, not skipped:** without it, the very first boot (and
-   any future deploy that adds a migration) queries tables that don't exist yet and the process
-   crashes on startup — this is what happened the *second* time this was deployed, before the
-   `.medusa/server` fix above. `db:migrate` only applies *pending* migrations, so it's a fast no-op
-   on every deploy where the schema's already current — safe to leave in permanently. If your
-   Railway plan exposes a separate **Pre-Deploy Command** field, that's the more "correct" home for
-   this same command (run from `.medusa/server` there too); functionally equivalent to chaining it
-   into Start.
+   **Why `db:migrate` is *not* chained into Start:** it was, briefly, to fix the very first boot
+   (empty Neon DB, tables didn't exist yet — see the migrate step in 3.4). But `db:migrate` against
+   Neon is slow — it round-trips once per module (~25 modules) plus a slow link-sync step, measured
+   locally at **3+ minutes** end-to-end chained with `npm run start`. Paying that on every single
+   restart is what produced Railway's "Application failed to respond" — the process wasn't
+   crash-looping, it was just still migrating well past what looked like a reasonable boot time.
+   Once the schema is up to date (it is, after 3.4), re-running `db:migrate` on every boot buys
+   nothing. Run it manually instead — same one-off command as 3.4 — only on a future deploy that
+   actually adds a migration (e.g. after changing a model).
 
 ### 3.2 Environment variables
 
@@ -171,6 +172,13 @@ key) the same way it did locally — see `BE/apps/backend/README.md` for what th
 thumbnail URLs against `STOREFRONT_BASE_URL`, which is why that variable has to be correct
 *before* this runs. If you set it wrong, just re-run `seed:vape` — it's idempotent (rebuilds the
 catalogue fresh every time, see the backend README's "Setup" step 6).
+
+**If you run `db:migrate` again later** (e.g. after a future model change), expect to see `Failed
+to run migration script ... initial-data-seed.js:: Countries with codes: "..." are already
+assigned to a region` in the output — that's the scaffold's own one-time seed script, which isn't
+written to be idempotent, failing to re-create the Europe region that already exists. Harmless:
+`db:migrate` still exits 0, your actual pending schema migrations still apply, and the deployed
+app is unaffected. Confirmed by reproducing it directly against this project's Neon DB.
 
 ### 3.5 Get the publishable key
 
