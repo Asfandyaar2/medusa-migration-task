@@ -91,9 +91,17 @@ actual project name everywhere below).
 2. Service **Settings → Source → Root Directory: `BE/apps/backend`**.
 3. Settings → Deploy:
    - **Build Command:** `npm run build`
-   - **Start Command:** `npm run start`
+   - **Start Command:** `npx medusa db:migrate && npm run start`
    (Railway's Nixpacks builder usually infers both from `package.json`, but set them explicitly
    so a future dependency bump can't silently change what runs.)
+
+   **Why the migrate step is chained into Start, not skipped:** without it, the very first boot
+   (and any future deploy that adds a migration) queries tables that don't exist yet and the
+   process crashes on startup — this is exactly what happened the first time this was deployed
+   without it. `db:migrate` only applies *pending* migrations, so it's a fast no-op on every
+   deploy where the schema's already current — safe to leave in permanently. If your Railway plan
+   exposes a separate **Pre-Deploy Command** field, that's the more "correct" home for this same
+   command; functionally equivalent to chaining it here.
 
 ### 3.2 Environment variables
 
