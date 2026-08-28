@@ -16,21 +16,42 @@ export default function CartLineItem({
   currencyCode: string
 }) {
   const router = useRouter()
-  const [isUpdating, setIsUpdating] = useState(false)
+  // Optimistic: quantity/removal update on screen immediately, the real
+  // mutation (Vercel -> Railway -> Neon, a couple of seconds even when
+  // healthy) runs in the background and only gets walked back if it
+  // actually fails. router.refresh() still runs once it resolves, so the
+  // real cart totals/count catch up shortly after.
+  const [quantity, setQuantity] = useState(item.quantity)
+  const [removed, setRemoved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const changeQuantity = async (quantity: number) => {
-    if (quantity < 1) return
-    setIsUpdating(true)
-    await updateLineItem({ lineId: item.id, quantity })
-    router.refresh()
-    setIsUpdating(false)
+  const changeQuantity = (nextQuantity: number) => {
+    if (nextQuantity < 1) return
+    const previousQuantity = quantity
+    setQuantity(nextQuantity)
+    setError(null)
+
+    updateLineItem({ lineId: item.id, quantity: nextQuantity })
+      .then(() => router.refresh())
+      .catch(() => {
+        setQuantity(previousQuantity)
+        setError("Couldn't update quantity — try again.")
+      })
   }
 
-  const remove = async () => {
-    setIsUpdating(true)
-    await deleteLineItem(item.id)
-    router.refresh()
+  const remove = () => {
+    setRemoved(true)
+    setError(null)
+
+    deleteLineItem(item.id)
+      .then(() => router.refresh())
+      .catch(() => {
+        setRemoved(false)
+        setError("Couldn't remove item — try again.")
+      })
   }
+
+  if (removed) return null
 
   return (
     <li className="flex gap-4 border-b border-brand-navy/10 py-6">
@@ -70,18 +91,16 @@ export default function CartLineItem({
           <div className="flex items-center rounded-full border border-brand-navy/30">
             <button
               type="button"
-              disabled={isUpdating}
-              onClick={() => changeQuantity(item.quantity - 1)}
+              onClick={() => changeQuantity(quantity - 1)}
               className="h-8 w-8 text-brand-navy disabled:opacity-40"
               aria-label="Decrease quantity"
             >
               &minus;
             </button>
-            <span className="w-6 text-center text-sm">{item.quantity}</span>
+            <span className="w-6 text-center text-sm">{quantity}</span>
             <button
               type="button"
-              disabled={isUpdating}
-              onClick={() => changeQuantity(item.quantity + 1)}
+              onClick={() => changeQuantity(quantity + 1)}
               className="h-8 w-8 text-brand-navy disabled:opacity-40"
               aria-label="Increase quantity"
             >
@@ -90,18 +109,21 @@ export default function CartLineItem({
           </div>
           <button
             type="button"
-            disabled={isUpdating}
             onClick={remove}
             className="text-xs font-semibold uppercase tracking-wide text-grey-50 underline hover:text-brand-crimson disabled:opacity-40"
           >
             Remove
           </button>
         </div>
+        {error && <p className="text-xs text-brand-crimson">{error}</p>}
       </div>
 
       <p className="whitespace-nowrap font-display text-sm font-bold text-brand-navy">
         {convertToLocale({
-          amount: item.total ?? item.unit_price * item.quantity,
+          // Derived from the optimistic quantity rather than item.total,
+          // which still reflects the pre-update quantity until
+          // router.refresh() catches up a moment later.
+          amount: item.unit_price * quantity,
           currency_code: currencyCode,
         })}
       </p>
