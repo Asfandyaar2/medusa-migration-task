@@ -127,9 +127,18 @@ export async function addToCart({
     throw new Error("Missing variant ID when adding to cart")
   }
 
-  const cart = await getOrSetCart(countryCode)
+  // Once a cart cookie exists, skip getOrSetCart's retrieve-then-compare
+  // round trip (a GET to re-fetch the cart's region_id, purely to check it
+  // still matches). That check exists for stores where a shopper can
+  // switch region mid-session; this storefront is single-region by design
+  // (NEXT_PUBLIC_DEFAULT_REGION is read directly everywhere, see the FE
+  // README's "Assumptions" section), so the cart's region can't actually
+  // have drifted. Skipping it removes one full backend round trip from
+  // every add-to-cart after the first, not just the initial one.
+  const existingCartId = await getCartId()
+  const cartId = existingCartId ?? (await getOrSetCart(countryCode))?.id
 
-  if (!cart) {
+  if (!cartId) {
     throw new Error("Error retrieving or creating cart")
   }
 
@@ -139,7 +148,7 @@ export async function addToCart({
 
   await sdk.store.cart
     .createLineItem(
-      cart.id,
+      cartId,
       {
         variant_id: variantId,
         quantity,
