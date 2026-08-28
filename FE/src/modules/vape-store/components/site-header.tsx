@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { BarsThree, XMark } from "@medusajs/icons"
 import { STORE_SHORT_NAME } from "@lib/constants/store"
+import { useCartCount } from "@lib/context/cart-count-context"
 
 const NAV_LINKS = [
   { href: "/collections/disposable-vapes", label: "Disposable Vapes" },
@@ -23,6 +24,31 @@ export default function SiteHeader({
   cartItemCount?: number
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const {
+    count: cartCount,
+    setCount: setCartCount,
+    initialized,
+    markInitialized,
+  } = useCartCount()
+
+  // cartItemCount is this page's real, server-computed count. It's only
+  // trusted to seed the shared count once per session (the first time any
+  // SiteHeader instance mounts) -- every page defines its own <SiteHeader>
+  // rather than sharing one from a layout, so navigating to a new page
+  // mounts a fresh instance. If it re-synced from the prop on every mount,
+  // navigating away right after an add/remove (before that mutation's
+  // background request has resolved and revalidated) would stomp the
+  // optimistic bump with the previous, now-stale, count. After the initial
+  // seed, AddToCartForm/CartLineItem's bump() calls are the only writers.
+  useEffect(() => {
+    if (!initialized) {
+      setCartCount(cartItemCount)
+      markInitialized()
+    }
+    // Intentionally only re-runs when this specific instance mounts --
+    // see comment above for why cartItemCount isn't a dependency here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-brand-navy/90 text-white shadow-lg shadow-black/10 backdrop-blur-md">
@@ -66,7 +92,7 @@ export default function SiteHeader({
             href="/cart"
             className="group relative text-xs font-semibold uppercase tracking-wide text-white/80 transition-colors hover:text-brand-sky"
           >
-            Cart ({cartItemCount})
+            Cart ({cartCount})
             <span className="absolute -bottom-1 left-0 h-px w-0 bg-brand-sky transition-all duration-200 group-hover:w-full" />
           </Link>
         </nav>
@@ -81,7 +107,7 @@ export default function SiteHeader({
       {mobileNavOpen && (
         <nav className="small:hidden border-t border-white/10 bg-brand-navy-dark">
           <ul className="content-container flex flex-col py-2">
-            {[...NAV_LINKS, { href: "/cart", label: `Cart (${cartItemCount})` }].map(
+            {[...NAV_LINKS, { href: "/cart", label: `Cart (${cartCount})` }].map(
               (link) => (
                 <li key={link.href}>
                   <Link

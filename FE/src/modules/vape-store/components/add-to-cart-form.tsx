@@ -6,6 +6,7 @@ import { Loader } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import { addToCart } from "@lib/data/cart"
 import { CART_COUNTRY_CODE } from "@lib/util/cart-region"
+import { useCartCount } from "@lib/context/cart-count-context"
 import VariantPills from "./variant-pills"
 
 export default function AddToCartForm({
@@ -14,6 +15,7 @@ export default function AddToCartForm({
   product: HttpTypes.StoreProduct
 }) {
   const router = useRouter()
+  const { bump } = useCartCount()
   const variants = product.variants ?? []
 
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
@@ -39,11 +41,14 @@ export default function AddToCartForm({
   // it, rather than lingering on a separate "Added to Cart" label. The
   // real cart (and its count badge elsewhere) still catches up shortly
   // after via router.refresh() once the background request resolves.
+  // bump(1) updates the header's cart count in the same tick as the
+  // spinner appears, rather than waiting for that refresh to land.
   const handleAddToCart = () => {
     if (!selectedVariantId) return
 
     setIsPending(true)
     setError(null)
+    bump(1)
 
     addToCart({
       variantId: selectedVariantId,
@@ -51,7 +56,10 @@ export default function AddToCartForm({
       countryCode: CART_COUNTRY_CODE,
     })
       .then(() => router.refresh())
-      .catch(() => setError("Couldn't add to cart — please try again."))
+      .catch(() => {
+        bump(-1)
+        setError("Couldn't add to cart — please try again.")
+      })
 
     setTimeout(() => setIsPending(false), 700)
   }

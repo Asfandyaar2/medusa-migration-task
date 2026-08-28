@@ -7,6 +7,7 @@ import Link from "next/link"
 import { HttpTypes } from "@medusajs/types"
 import { updateLineItem, deleteLineItem } from "@lib/data/cart"
 import { convertToLocale } from "@lib/util/money"
+import { useCartCount } from "@lib/context/cart-count-context"
 
 export default function CartLineItem({
   item,
@@ -16,11 +17,13 @@ export default function CartLineItem({
   currencyCode: string
 }) {
   const router = useRouter()
+  const { bump } = useCartCount()
   // Optimistic: quantity/removal update on screen immediately, the real
   // mutation (Vercel -> Railway -> Neon, a couple of seconds even when
   // healthy) runs in the background and only gets walked back if it
   // actually fails. router.refresh() still runs once it resolves, so the
-  // real cart totals/count catch up shortly after.
+  // real cart totals catch up shortly after -- the header count, though,
+  // is bumped right here so it moves in the same tick as this row does.
   const [quantity, setQuantity] = useState(item.quantity)
   const [removed, setRemoved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,11 +33,13 @@ export default function CartLineItem({
     const previousQuantity = quantity
     setQuantity(nextQuantity)
     setError(null)
+    bump(nextQuantity - previousQuantity)
 
     updateLineItem({ lineId: item.id, quantity: nextQuantity })
       .then(() => router.refresh())
       .catch(() => {
         setQuantity(previousQuantity)
+        bump(previousQuantity - nextQuantity)
         setError("Couldn't update quantity — try again.")
       })
   }
@@ -42,11 +47,13 @@ export default function CartLineItem({
   const remove = () => {
     setRemoved(true)
     setError(null)
+    bump(-quantity)
 
     deleteLineItem(item.id)
       .then(() => router.refresh())
       .catch(() => {
         setRemoved(false)
+        bump(quantity)
         setError("Couldn't remove item — try again.")
       })
   }

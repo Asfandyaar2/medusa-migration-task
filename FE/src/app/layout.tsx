@@ -1,6 +1,7 @@
 import { getBaseURL } from "@lib/util/env"
 import { Metadata } from "next"
 import { Inter, Space_Grotesk } from "next/font/google"
+import { CartCountProvider } from "@lib/context/cart-count-context"
 import "styles/globals.css"
 
 const inter = Inter({
@@ -28,7 +29,9 @@ export default function RootLayout(props: { children: React.ReactNode }) {
       className={`${inter.variable} ${spaceGrotesk.variable}`}
     >
       <body>
-        <main className="relative">{props.children}</main>
+        <CartCountProvider>
+          <main className="relative">{props.children}</main>
+        </CartCountProvider>
       </body>
     </html>
   )
