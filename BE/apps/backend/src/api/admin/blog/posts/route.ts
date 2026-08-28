@@ -1,4 +1,8 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import type {
+  AuthenticatedMedusaRequest,
+  MedusaRequest,
+  MedusaResponse,
+} from "@medusajs/framework/http"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { createBlogPostWorkflow } from "../../../../workflows/blog/create-post"
 import { BLOG_MODULE } from "../../../../modules/blog"
@@ -71,7 +75,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 }
 
 export async function POST(
-  req: MedusaRequest<CreateBlogPostBody>,
+  req: AuthenticatedMedusaRequest<CreateBlogPostBody>,
   res: MedusaResponse
 ) {
   const authorId = req.auth_context?.actor_id

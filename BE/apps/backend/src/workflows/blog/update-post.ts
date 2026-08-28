@@ -62,7 +62,20 @@ const updateBlogPostStep = createStep(
       return
     }
     const blogModuleService: BlogModuleService = container.resolve(BLOG_MODULE)
-    await blogModuleService.updateBlogPosts(previous)
+    // Roll back only the scalar/FK fields the update step could have
+    // changed — `previous` is a full retrieveBlogPost() entity, whose
+    // `category` is a resolved relation object, not the FK string the
+    // update DML expects.
+    const {
+      id, title, slug, excerpt, content, status, published_at,
+      featured_image, seo_title, seo_description, author_name, author_id,
+      category_id, tag_ids,
+    } = previous
+    await blogModuleService.updateBlogPosts({
+      id, title, slug, excerpt, content, status, published_at,
+      featured_image, seo_title, seo_description, author_name, author_id,
+      category_id, tag_ids,
+    })
   }
 )
 

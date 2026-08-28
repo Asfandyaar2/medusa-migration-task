@@ -32,12 +32,15 @@ const createBlogPostStep = createStep(
     const slug = slugify(input.slug || input.title)
     const status = input.status || "draft"
 
-    const { slug: _slug, ...rest } = input
+    const { slug: _slug, tag_ids, ...rest } = input
 
     let post
     try {
       post = await blogModuleService.createBlogPosts({
         ...rest,
+        // model.json() types the write side as Record<string, unknown> even
+        // though tag_ids is always a string[] at runtime — see resolve-tags.ts.
+        tag_ids: tag_ids as unknown as Record<string, unknown> | undefined,
         slug,
         status,
         published_at: status === "published" ? new Date() : null,

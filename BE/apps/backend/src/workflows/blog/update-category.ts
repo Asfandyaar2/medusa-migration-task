@@ -47,7 +47,11 @@ const updateBlogCategoryStep = createStep(
       return
     }
     const blogModuleService: BlogModuleService = container.resolve(BLOG_MODULE)
-    await blogModuleService.updateBlogCategories(previous)
+    // Roll back only the scalar fields the update step could have changed —
+    // `previous` is a full retrieveBlogCategory() entity, whose `posts` is a
+    // resolved relation array, not the FK string[] the update DML expects.
+    const { id, name, slug, description } = previous
+    await blogModuleService.updateBlogCategories({ id, name, slug, description })
   }
 )
 

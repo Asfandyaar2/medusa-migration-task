@@ -31,6 +31,14 @@ const nextConfig = {
         hostname: "localhost",
       },
       {
+        // Product thumbnails are seeded as absolute URLs pointing at
+        // STOREFRONT_BASE_URL (this app's own domain) — Vercel's
+        // preview/production hostnames need to be allow-listed here or
+        // next/image rejects them at request time.
+        protocol: "https",
+        hostname: "*.vercel.app",
+      },
+      {
         protocol: "https",
         hostname: "medusa-public-images.s3.eu-west-1.amazonaws.com",
       },
